@@ -1,4 +1,4 @@
-package org.example.ensp_project;
+package bf.ensp.scolarite;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

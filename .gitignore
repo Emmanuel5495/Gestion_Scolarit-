@@ -13,7 +13,15 @@ target/
 # Variables d'environnement (ne jamais push tes mots de passe)
 application-prod.yml
 application-local.yml
+.env
 
 # OS
 .DS_Store
 Thumbs.db
+
+# Upload (fichiers soumis par les étudiants)
+uploads/
+
+# Logs
+*.log
+logs/
