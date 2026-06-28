@@ -1,0 +1,19 @@
+# IntelliJ
+.idea/
+*.iml
+*.iws
+
+# Maven
+target/
+
+# Spring Boot
+*.jar
+*.war
+
+# Variables d'environnement (ne jamais push tes mots de passe)
+application-prod.yml
+application-local.yml
+
+# OS
+.DS_Store
+Thumbs.db
