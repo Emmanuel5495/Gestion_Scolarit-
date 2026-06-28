@@ -33,6 +33,8 @@ public class SecurityConfig {
                 // Routes publiques — pas besoin d'être connecté
                 .requestMatchers(
                         "/api/auth/**",
+                        "/api/modes-entree",
+                        "/api/preinscriptions",
                         "/swagger-ui/**",
                         "/v3/api-docs/**"
                 ).permitAll()

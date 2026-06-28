@@ -20,6 +20,32 @@ public class Preinscription {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // Infos personnelles du candidat
+    @Column(nullable = false)
+    private String nom;
+
+    @Column(nullable = false)
+    private String prenom;
+
+    @Column(nullable = false)
+    private String sexe;
+
+    @Column
+    private LocalDate dateNaissance;
+
+    @Column
+    private String lieuNaissance;
+
+    @Column
+    private String email;
+
+    @Column
+    private String telephone;
+
+    @Column
+    private String motDePasse;
+
+    // Infos dossier
     @Column(unique = true)
     private String numeroDossier;
 
@@ -31,10 +57,6 @@ public class Preinscription {
     private StatutDossier statut;
 
     private String motifRejet;
-
-    @ManyToOne
-    @JoinColumn(name = "etudiant_id", nullable = false)
-    private Etudiant etudiant;
 
     @ManyToOne
     @JoinColumn(name = "mode_entree_id", nullable = false)

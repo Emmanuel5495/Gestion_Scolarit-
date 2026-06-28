@@ -9,9 +9,7 @@ import java.util.List;
 
 public interface PreinscriptionService {
     PreinscriptionResponse soumettre(PreinscriptionRequest request,
-                                     List<MultipartFile> fichiers,
-                                     String emailEtudiant);
-    List<PreinscriptionResponse> getMesPreinscriptions(String emailEtudiant);
+                                     List<MultipartFile> fichiers);
     List<PreinscriptionResponse> getDossiersEnAttente();
     List<PreinscriptionResponse> getTousDossiers();
     PreinscriptionResponse getDossierById(Long id);

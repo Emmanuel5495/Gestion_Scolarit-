@@ -1,10 +1,7 @@
 package bf.ensp.scolarite.dto.response;
 
 import bf.ensp.scolarite.enums.StatutDossier;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -21,8 +18,9 @@ public class PreinscriptionResponse {
     private String motifRejet;
     private String modeEntree;
     private String anneeAcademique;
-    private String nomEtudiant;
-    private String prenomEtudiant;
-    private String emailEtudiant;
+    private String nom;
+    private String prenom;
+    private String email;
+    private String telephone;
     private List<DocumentRequisResponse> documents;
 }

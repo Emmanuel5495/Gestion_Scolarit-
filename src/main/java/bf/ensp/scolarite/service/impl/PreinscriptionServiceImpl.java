@@ -13,6 +13,7 @@ import bf.ensp.scolarite.service.DocumentService;
 import bf.ensp.scolarite.service.MailService;
 import bf.ensp.scolarite.service.PreinscriptionService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -26,24 +27,17 @@ import java.util.stream.Collectors;
 public class PreinscriptionServiceImpl implements PreinscriptionService {
 
     private final PreinscriptionRepository preinscriptionRepository;
-    private final EtudiantRepository etudiantRepository;
     private final ModeEntreeRepository modeEntreeRepository;
     private final AnneeAcademiqueRepository anneeAcademiqueRepository;
     private final DocumentRequisRepository documentRequisRepository;
     private final DocumentService documentService;
     private final MailService mailService;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     @Transactional
     public PreinscriptionResponse soumettre(PreinscriptionRequest request,
-                                             List<MultipartFile> fichiers,
-                                             String emailEtudiant) {
-
-        Etudiant etudiant = etudiantRepository
-                .findByUtilisateurEmail(emailEtudiant)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Étudiant non trouvé")
-                );
+                                            List<MultipartFile> fichiers) {
 
         ModeEntree modeEntree = modeEntreeRepository
                 .findById(request.getModeEntreeId())
@@ -57,17 +51,23 @@ public class PreinscriptionServiceImpl implements PreinscriptionService {
                         new ResourceNotFoundException("Année académique non trouvée")
                 );
 
-        // Création de la préinscription
         Preinscription preinscription = Preinscription.builder()
+                .nom(request.getNom())
+                .prenom(request.getPrenom())
+                .sexe(request.getSexe())
+                .dateNaissance(request.getDateNaissance())
+                .lieuNaissance(request.getLieuNaissance())
+                .email(request.getEmail())
+                .telephone(request.getTelephone())
+                .motDePasse(passwordEncoder.encode(request.getMotDePasse()))
                 .dateDepot(LocalDate.now())
                 .statut(StatutDossier.EN_ATTENTE)
-                .etudiant(etudiant)
                 .modeEntree(modeEntree)
                 .anneeAcademique(annee)
                 .build();
+
         preinscriptionRepository.save(preinscription);
 
-        // Sauvegarde des documents
         if (fichiers != null && !fichiers.isEmpty()) {
             for (MultipartFile fichier : fichiers) {
                 String chemin = documentService.sauvegarderFichier(
@@ -87,15 +87,6 @@ public class PreinscriptionServiceImpl implements PreinscriptionService {
     }
 
     @Override
-    public List<PreinscriptionResponse> getMesPreinscriptions(String emailEtudiant) {
-        return preinscriptionRepository
-                .findByEtudiantUtilisateurEmail(emailEtudiant)
-                .stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
-    }
-
-    @Override
     public List<PreinscriptionResponse> getDossiersEnAttente() {
         return preinscriptionRepository
                 .findByStatut(StatutDossier.EN_ATTENTE)
@@ -106,7 +97,7 @@ public class PreinscriptionServiceImpl implements PreinscriptionService {
 
     @Override
     public List<PreinscriptionResponse> getTousDossiers() {
-        return preinscriptionRepository.findAll()
+        return preinscriptionRepository.findAllWithDetails()
                 .stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
@@ -114,7 +105,7 @@ public class PreinscriptionServiceImpl implements PreinscriptionService {
 
     @Override
     public PreinscriptionResponse getDossierById(Long id) {
-        return toResponse(preinscriptionRepository.findById(id)
+        return toResponse(preinscriptionRepository.findByIdWithDetails(id)
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Dossier non trouvé")
                 ));
@@ -123,10 +114,10 @@ public class PreinscriptionServiceImpl implements PreinscriptionService {
     @Override
     @Transactional
     public PreinscriptionResponse traiterDossier(Long id,
-                                                  TraiterDossierRequest request) {
+                                                 TraiterDossierRequest request) {
 
         Preinscription preinscription = preinscriptionRepository
-                .findById(id)
+                .findByIdWithDetails(id)
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Dossier non trouvé")
                 );
@@ -137,7 +128,6 @@ public class PreinscriptionServiceImpl implements PreinscriptionService {
 
         switch (request.getDecision()) {
             case VALIDE -> {
-                // Transfert, Permutation, Convention → numéro de dossier
                 TypeModeEntree type = preinscription.getModeEntree().getType();
                 if (type == TypeModeEntree.TRANSFERT
                         || type == TypeModeEntree.PERMUTATION
@@ -146,10 +136,11 @@ public class PreinscriptionServiceImpl implements PreinscriptionService {
                     preinscription.setNumeroDossier(
                             genererNumeroDossier(preinscription.getId())
                     );
+                    preinscriptionRepository.save(preinscription);
                     mailService.envoyerNotificationValidation(preinscription);
                 } else {
-                    // Concours direct → présélectionné
                     preinscription.setStatut(StatutDossier.PRESELECTIONNE);
+                    preinscriptionRepository.save(preinscription);
                     mailService.envoyerNotificationConcours(preinscription);
                 }
             }
@@ -160,14 +151,14 @@ public class PreinscriptionServiceImpl implements PreinscriptionService {
                             "Le motif de rejet est obligatoire"
                     );
                 }
-                preinscription.setStatut(StatutDossier.REJETE);
                 preinscription.setMotifRejet(request.getMotifRejet());
                 mailService.envoyerNotificationRejet(preinscription);
+                preinscriptionRepository.delete(preinscription);
+                return null;
             }
             default -> throw new IllegalArgumentException("Décision invalide");
         }
 
-        preinscriptionRepository.save(preinscription);
         return toResponse(preinscription);
     }
 
@@ -179,12 +170,12 @@ public class PreinscriptionServiceImpl implements PreinscriptionService {
         List<DocumentRequisResponse> docs = p.getDocuments() == null
                 ? List.of()
                 : p.getDocuments().stream()
-                        .map(d -> DocumentRequisResponse.builder()
-                                .id(d.getId())
-                                .typeDocument(d.getTypeDocument())
-                                .cheminFichier(d.getCheminFichier())
-                                .build())
-                        .collect(Collectors.toList());
+                .map(d -> DocumentRequisResponse.builder()
+                        .id(d.getId())
+                        .typeDocument(d.getTypeDocument())
+                        .cheminFichier(d.getCheminFichier())
+                        .build())
+                .collect(Collectors.toList());
 
         return PreinscriptionResponse.builder()
                 .id(p.getId())
@@ -194,9 +185,10 @@ public class PreinscriptionServiceImpl implements PreinscriptionService {
                 .motifRejet(p.getMotifRejet())
                 .modeEntree(p.getModeEntree().getLibelle())
                 .anneeAcademique(p.getAnneeAcademique().getLibelle())
-                .nomEtudiant(p.getEtudiant().getNom())
-                .prenomEtudiant(p.getEtudiant().getPrenom())
-                .emailEtudiant(p.getEtudiant().getUtilisateur().getEmail())
+                .nom(p.getNom())
+                .prenom(p.getPrenom())
+                .email(p.getEmail())
+                .telephone(p.getTelephone())
                 .documents(docs)
                 .build();
     }

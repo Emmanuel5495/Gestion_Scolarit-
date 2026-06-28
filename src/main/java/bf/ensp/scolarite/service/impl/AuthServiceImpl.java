@@ -1,9 +1,12 @@
 package bf.ensp.scolarite.service.impl;
 
 import bf.ensp.scolarite.dto.request.LoginRequest;
+import bf.ensp.scolarite.entity.ServicePedagogique;
+import bf.ensp.scolarite.repository.ServicePedagogiqueRepository;
 import bf.ensp.scolarite.dto.request.RegisterEtudiantRequest;
 import bf.ensp.scolarite.dto.response.AuthResponse;
 import bf.ensp.scolarite.entity.Etudiant;
+import bf.ensp.scolarite.entity.ServicePedagogique;
 import bf.ensp.scolarite.entity.Utilisateur;
 import bf.ensp.scolarite.enums.Role;
 import bf.ensp.scolarite.exception.ResourceNotFoundException;
@@ -28,6 +31,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtUtils jwtUtils;
+    private final ServicePedagogiqueRepository servicePedagogiqueRepository;
 
     @Override
     @Transactional
@@ -103,8 +107,17 @@ public class AuthServiceImpl implements AuthService {
                 nom = etudiant.getNom();
                 prenom = etudiant.getPrenom();
             }
-            case SERVICE_PEDAGOGIQUE, ADMIN -> {
-                nom = utilisateur.getEmail();
+            case SERVICE_PEDAGOGIQUE -> {
+                ServicePedagogique sp = servicePedagogiqueRepository
+                        .findByUtilisateurId(utilisateur.getId())
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException("Profil service pédagogique non trouvé")
+                        );
+                nom = sp.getNom();
+                prenom = sp.getPrenom();
+            }
+            case ADMIN -> {
+                nom = "Administrateur";
                 prenom = "";
             }
         }

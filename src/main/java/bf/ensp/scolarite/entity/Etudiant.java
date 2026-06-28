@@ -41,8 +41,6 @@ public class Etudiant {
     @JoinColumn(name = "utilisateur_id", nullable = false)
     private Utilisateur utilisateur;
 
-    @OneToMany(mappedBy = "etudiant", cascade = CascadeType.ALL)
-    private List<Preinscription> preinscriptions;
 
     @OneToOne(mappedBy = "etudiant", cascade = CascadeType.ALL)
     private Inscription inscription;

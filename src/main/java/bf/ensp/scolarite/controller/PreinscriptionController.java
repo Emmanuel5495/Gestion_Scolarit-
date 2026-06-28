@@ -5,11 +5,11 @@ import bf.ensp.scolarite.dto.request.TraiterDossierRequest;
 import bf.ensp.scolarite.dto.response.ApiResponse;
 import bf.ensp.scolarite.dto.response.PreinscriptionResponse;
 import bf.ensp.scolarite.service.PreinscriptionService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -21,49 +21,42 @@ public class PreinscriptionController {
 
     private final PreinscriptionService preinscriptionService;
 
-    // Étudiant — soumettre un dossier
-    @PostMapping("/api/etudiant/preinscriptions")
+    // Public — soumettre un dossier sans compte
+    @PostMapping(value = "/api/preinscriptions",
+            consumes = "multipart/form-data")
     public ResponseEntity<ApiResponse<PreinscriptionResponse>> soumettre(
-            @RequestPart("data") @Valid PreinscriptionRequest request,
+            @RequestPart("data") String dataJson,
             @RequestPart(value = "fichiers", required = false)
-            List<MultipartFile> fichiers,
-            @AuthenticationPrincipal UserDetails userDetails) {
-        PreinscriptionResponse response = preinscriptionService.soumettre(
-                request, fichiers, userDetails.getUsername()
+            List<MultipartFile> fichiers) throws Exception {
+
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new JavaTimeModule());
+        PreinscriptionRequest request = mapper.readValue(
+                dataJson, PreinscriptionRequest.class
         );
+
+        PreinscriptionResponse response = preinscriptionService
+                .soumettre(request, fichiers);
         return ResponseEntity.ok(
                 ApiResponse.success("Dossier soumis avec succès", response)
-        );
-    }
-
-    // Étudiant — voir mes dossiers
-    @GetMapping("/api/etudiant/preinscriptions")
-    public ResponseEntity<ApiResponse<List<PreinscriptionResponse>>> mesDossiers(
-            @AuthenticationPrincipal UserDetails userDetails) {
-        List<PreinscriptionResponse> dossiers = preinscriptionService
-                .getMesPreinscriptions(userDetails.getUsername());
-        return ResponseEntity.ok(
-                ApiResponse.success("Dossiers récupérés", dossiers)
         );
     }
 
     // Service pédagogique — voir dossiers en attente
     @GetMapping("/api/service-pedagogique/preinscriptions/en-attente")
     public ResponseEntity<ApiResponse<List<PreinscriptionResponse>>> dossiersEnAttente() {
-        List<PreinscriptionResponse> dossiers = preinscriptionService
-                .getDossiersEnAttente();
         return ResponseEntity.ok(
-                ApiResponse.success("Dossiers en attente récupérés", dossiers)
+                ApiResponse.success("Dossiers en attente récupérés",
+                        preinscriptionService.getDossiersEnAttente())
         );
     }
 
     // Service pédagogique — voir tous les dossiers
     @GetMapping("/api/service-pedagogique/preinscriptions")
     public ResponseEntity<ApiResponse<List<PreinscriptionResponse>>> tousDossiers() {
-        List<PreinscriptionResponse> dossiers = preinscriptionService
-                .getTousDossiers();
         return ResponseEntity.ok(
-                ApiResponse.success("Tous les dossiers récupérés", dossiers)
+                ApiResponse.success("Tous les dossiers récupérés",
+                        preinscriptionService.getTousDossiers())
         );
     }
 

@@ -21,10 +21,9 @@ public class MailServiceImpl implements MailService {
 
     @Override
     public void envoyerNotificationValidation(Preinscription preinscription) {
-        String email = preinscription.getEtudiant()
-                .getUtilisateur().getEmail();
-        String nom = preinscription.getEtudiant().getNom();
-        String prenom = preinscription.getEtudiant().getPrenom();
+        String email = preinscription.getEmail();
+        String nom = preinscription.getNom();
+        String prenom = preinscription.getPrenom();
         String numeroDossier = preinscription.getNumeroDossier();
 
         String sujet = "ENSP — Validation de votre dossier";
@@ -32,7 +31,7 @@ public class MailServiceImpl implements MailService {
                 + "<p>Votre dossier de préinscription a été <strong>validé</strong>.</p>"
                 + "<p>Votre numéro de dossier est : <strong>"
                 + numeroDossier + "</strong></p>"
-                + "<p>Vous pouvez maintenant procéder à votre inscription.</p>"
+                + "<p>Conservez ce numéro, il vous sera demandé lors de l'inscription.</p>"
                 + "<br><p>Service Pédagogique — ENSP</p>";
 
         envoyerMail(email, sujet, contenu);
@@ -40,10 +39,9 @@ public class MailServiceImpl implements MailService {
 
     @Override
     public void envoyerNotificationRejet(Preinscription preinscription) {
-        String email = preinscription.getEtudiant()
-                .getUtilisateur().getEmail();
-        String nom = preinscription.getEtudiant().getNom();
-        String prenom = preinscription.getEtudiant().getPrenom();
+        String email = preinscription.getEmail();
+        String nom = preinscription.getNom();
+        String prenom = preinscription.getPrenom();
         String motif = preinscription.getMotifRejet();
 
         String sujet = "ENSP — Rejet de votre dossier";
@@ -56,12 +54,12 @@ public class MailServiceImpl implements MailService {
         envoyerMail(email, sujet, contenu);
     }
 
+
     @Override
     public void envoyerNotificationConcours(Preinscription preinscription) {
-        String email = preinscription.getEtudiant()
-                .getUtilisateur().getEmail();
-        String nom = preinscription.getEtudiant().getNom();
-        String prenom = preinscription.getEtudiant().getPrenom();
+        String email = preinscription.getEmail();
+        String nom = preinscription.getNom();
+        String prenom = preinscription.getPrenom();
 
         String sujet = "ENSP — Autorisation à composer";
         String contenu = "<h2>Bonjour " + prenom + " " + nom + ",</h2>"
